@@ -56,7 +56,15 @@ cd hopewell
 ```
 
 ### Step 4: Start the Web Server with PM2 on Port 80
+> **Note**: In Linux, binding to Port 80 requires root privileges. Switch to root first:
+
 ```bash
+# Switch to root user
+sudo -s
+
+# Go to project directory
+cd /home/ec2-user/hopewell
+
 # Start serving static files on standard HTTP port 80
 pm2 start serve --name "hopewell" -- -s . -l 80
 
