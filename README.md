@@ -111,11 +111,44 @@ The site updates immediately!
 
 ---
 
-## Alternative Deployment: AWS Elastic Beanstalk
+## Deployment Option 2: AWS Elastic Beanstalk & CI/CD Pipeline
 
-You can also host Hopewell on AWS Elastic Beanstalk for auto-scaling and managed infrastructure.
+You can host Hopewell on AWS Elastic Beanstalk for auto-scaling and zero-downtime managed infrastructure.
 
-### Method A: AWS Management Console (Zip Upload)
+### Method A: Automated CI/CD with GitHub Actions (Recommended)
+
+Every push to the `main` branch automatically packages and deploys the website to Elastic Beanstalk.
+
+#### 1. Setup Elastic Beanstalk on AWS
+1. Go to **AWS Elastic Beanstalk Console** > **Create application**.
+2. **Application Name**: `hopewell-app`.
+3. **Platform**: **PHP** (or **Node.js**).
+4. **Configuration preset**: **Single instance (free tier eligible)**.
+5. Create the environment and wait until status is **OK (Green)**.
+6. Note the **Application name** (`hopewell-app`), **Environment name** (e.g., `hopewell-env`), and **Region** (e.g., `ap-south-1`).
+
+#### 2. Create IAM User for GitHub Actions
+1. Go to AWS **IAM** > **Users** > **Create user** (`github-actions-eb`).
+2. Attach permissions: `AWSElasticBeanstalkFullAccess` and `AmazonS3FullAccess`.
+3. Under the user's **Security credentials** tab, generate an **Access Key**.
+4. Save the **Access Key ID** and **Secret Access Key**.
+
+#### 3. Add GitHub Repository Secrets
+1. In your GitHub repository, go to **Settings** > **Secrets and variables** > **Actions**.
+2. Add two repository secrets:
+   - `AWS_ACCESS_KEY_ID`: Your AWS access key.
+   - `AWS_SECRET_ACCESS_KEY`: Your AWS secret key.
+
+#### 4. GitHub Actions Workflow
+The workflow file is pre-configured in [`.github/workflows/deploy-elastic-beanstalk.yml`](.github/workflows/deploy-elastic-beanstalk.yml).
+Whenever you run `git push origin main`, GitHub Actions automatically:
+- Checks out the repository.
+- Packages all website files into a clean zip archive.
+- Deploys the package directly to AWS Elastic Beanstalk.
+
+---
+
+### Method B: Manual Deployment via AWS Console (Zip Upload)
 1. **Compress project files**:
    On Windows PowerShell inside the project directory:
    ```powershell
@@ -123,19 +156,19 @@ You can also host Hopewell on AWS Elastic Beanstalk for auto-scaling and managed
    ```
    *(Ensure `index.html` is at the root of the `.zip` archive).*
 2. In the **AWS Elastic Beanstalk Console**, click **Create application**.
-3. **Application Name**: `hopewell-charity`.
-4. **Platform**: Choose **PHP** or **Node.js** (Both provide pre-configured Apache/Nginx web servers).
+3. **Application Name**: `hopewell-app`.
+4. **Platform**: Choose **PHP** or **Node.js**.
 5. **Application code**: Select **Upload your code** and choose `hopewell-deploy.zip`.
 6. Select **Single instance (free tier eligible)** and click **Submit**.
 7. Once environment status turns **OK (Green)**, open the generated environment URL.
 
-### Method B: AWS EB CLI
+### Method C: Deploy via AWS EB CLI
 ```bash
 # Install EB CLI
 pip install awsebcli
 
 # Initialize
-eb init -p php hopewell --region us-east-1
+eb init -p php hopewell --region ap-south-1
 
 # Create environment and deploy
 eb create hopewell-env --single

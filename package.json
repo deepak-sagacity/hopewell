@@ -1,0 +1,21 @@
+{
+  "name": "hopewell",
+  "version": "1.0.0",
+  "description": "Hopewell - Bootstrap 5 & HTML5 Charity Website Template",
+  "main": "index.html",
+  "scripts": {
+    "start": "serve -s . -l 8080",
+    "serve": "serve -s . -l 80"
+  },
+  "dependencies": {
+    "serve": "^14.2.4"
+  },
+  "keywords": [
+    "charity",
+    "ngo",
+    "bootstrap5",
+    "html5"
+  ],
+  "author": "Deepak Sahni",
+  "license": "MIT"
+}
