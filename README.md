@@ -3,7 +3,8 @@
 Hopewell is a modern, responsive charity and NGO website template built with HTML5, CSS3, and Bootstrap 5.
 
 - **Repository**: [https://github.com/deepak-sagacity/hopewell](https://github.com/deepak-sagacity/hopewell)
-- **Demo**: [ThemeWagon Demo](https://themewagon.github.io/hopewell/)
+- **Live Demo (EC2)**: [http://3.111.38.182](http://3.111.38.182)
+- **Original Template Demo**: [ThemeWagon Demo](https://themewagon.github.io/hopewell/)
 
 ---
 
@@ -14,163 +15,144 @@ Hopewell is a modern, responsive charity and NGO website template built with HTM
 
 ---
 
-## Getting Started
+## Architecture & How It Works
 
-### 1. Clone the Repository
+Hopewell is a **static web application** (HTML, CSS, Bootstrap, JavaScript) with `index.html` as the main entry point. 
+
+Because it is a static frontend website (without a Node.js backend like Express), we serve it using **`serve`** (a lightweight production HTTP server) daemonized under **PM2** on port 80. This guarantees:
+- **24/7 Continuous Uptime**: PM2 keeps the server running in the background.
+- **Auto-Recovery**: Automatically restarts the server if the instance reboots.
+- **Clean URLs**: Port 80 allows accessing the site directly via IP/domain without adding a port number.
+
+---
+
+## Quick Presentation & Demo Guide
+
+If you are explaining or demoing this deployment to clients, team members, or stakeholders, follow this flow:
+
+### 1. The 30-Second Elevator Pitch
+> *"This is **Hopewell**, an open-source NGO and charity website template. We deployed it on a cloud **AWS EC2 Linux instance** configured with a production static web server managed by **PM2** on Port 80, delivering fast, zero-downtime hosting."*
+
+### 2. Live Demo Checklist
+1. **Show the Live Site**: Open `http://3.111.38.182` in your browser. Highlight the responsiveness and clean UI.
+2. **Show the Background Process**: In the EC2 terminal, run:
+   ```bash
+   pm2 status
+   ```
+   Show that the `hopewell` process is `online`, showing active memory usage and uptime.
+3. **Show How Updates Work**: Explain that pushing changes to GitHub and running `git pull` instantly refreshes production.
+
+---
+
+## Step-by-Step EC2 Deployment Guide (Amazon Linux / PM2)
+
+This is the exact setup running on the live EC2 instance (`3.111.38.182`).
+
+### Step 1: Connect to Your EC2 Instance
+1. In the **AWS Management Console**, navigate to **EC2** > **Instances**.
+2. Select your instance (`hopewell-web-server`).
+3. Click **Connect** (top right) and choose **EC2 Instance Connect** to open the browser terminal.
+
+### Step 2: Install Git, Node.js, PM2, and `serve`
+Inside the terminal, run:
+
+```bash
+# Update packages
+sudo dnf update -y
+
+# Install Git and Node.js
+sudo dnf install -y git nodejs
+
+# Install PM2 and serve globally
+sudo npm install -g pm2 serve
+```
+
+### Step 3: Clone the GitHub Repository
 ```bash
 git clone https://github.com/deepak-sagacity/hopewell.git
 cd hopewell
 ```
 
-### 2. Local Preview
-Open `index.html` directly in any web browser, or use VS Code's **Live Server** extension.
-
----
-
-## Deployment Guide
-
-### Option 1: Deploy on AWS EC2 (Direct / Manual Deployment)
-
-This method deploys the website on an Ubuntu EC2 instance using **Nginx** without requiring CI/CD pipelines.
-
-#### 1. Launch EC2 Instance
-1. In the **AWS Management Console**, go to **EC2** > **Launch Instance**.
-2. **Name**: `hopewell-web-server`.
-3. **OS**: **Ubuntu Server 24.04 LTS** or **22.04 LTS**.
-4. **Instance Type**: `t2.micro` or `t3.micro` (Free Tier eligible).
-5. **Key Pair**: Select an existing key or create a new one (download the `.pem` file).
-6. **Network & Security Groups**: Ensure the following inbound ports are open:
-   - **Port 22** (SSH)
-   - **Port 80** (HTTP)
-   - **Port 443** (HTTPS)
-7. Launch the instance and copy its **Public IPv4 Address**.
-
-#### 2. Connect via SSH
-On Windows PowerShell:
-```powershell
-# Set proper key permissions (Windows)
-icacls "C:\path\to\your-key.pem" /inheritance:r
-icacls "C:\path\to\your-key.pem" /grant:r "$($env:USERNAME):(R)"
-
-# Connect to instance
-ssh -i "C:\path\to\your-key.pem" ubuntu@<YOUR-EC2-PUBLIC-IP>
-```
-
-#### 3. Install Nginx and Git
-Inside your EC2 terminal:
+### Step 4: Start the Web Server with PM2 on Port 80
 ```bash
-sudo apt update
-sudo apt install nginx git -y
-sudo systemctl enable nginx
-sudo systemctl start nginx
+# Start serving static files on standard HTTP port 80
+pm2 start serve --name "hopewell" -- -s . -l 80
+
+# Save PM2 process list and configure auto-restart on reboot
+pm2 save
+pm2 startup
 ```
+*(If `pm2 startup` gives you a command to run, copy and execute it in your terminal).*
 
-#### 4. Clone Project onto Server
-```bash
-sudo git clone https://github.com/deepak-sagacity/hopewell.git /var/www/hopewell
-sudo chown -R www-data:www-data /var/www/hopewell
-sudo chmod -R 755 /var/www/hopewell
-```
+### Step 5: Configure the AWS Security Group
+To allow visitors to view your website:
+1. In the **AWS Console**, click your instance and select the **Security** tab.
+2. Click the active **Security Group**.
+3. Under **Inbound rules**, click **Edit inbound rules** and add:
+   - **Type**: `HTTP`
+   - **Port Range**: `80`
+   - **Source**: `Anywhere-IPv4` (`0.0.0.0/0`)
+4. Click **Save rules**.
 
-#### 5. Configure Nginx
-Edit the default site configuration:
-```bash
-sudo nano /etc/nginx/sites-available/default
-```
-
-Update the `root` directive to point to `/var/www/hopewell`:
-```nginx
-server {
-    listen 80 default_server;
-    listen [::]:80 default_server;
-
-    root /var/www/hopewell;
-    index index.html index.htm;
-
-    server_name _;
-
-    location / {
-        try_files $uri $uri/ =404;
-    }
-}
-```
-Save and exit (`CTRL+O`, `Enter`, `CTRL+X`).
-
-Test and reload Nginx:
-```bash
-sudo nginx -t
-sudo systemctl reload nginx
-```
-
-#### 6. Access the Website
+### Step 6: Verify Deployment
 Open your browser and visit:
 ```
 http://<YOUR-EC2-PUBLIC-IP>
 ```
+*(Example: `http://3.111.38.182`)*
 
-#### 7. Future Updates
-Whenever you push changes to GitHub, update the server with:
+### Step 7: How to Deploy Updates in the Future
+Whenever you push changes from your local machine to GitHub:
 ```bash
-cd /var/www/hopewell
-sudo git pull origin main
+cd ~/hopewell
+git pull origin main
+```
+The site updates immediately!
+
+---
+
+## Alternative Deployment: AWS Elastic Beanstalk
+
+You can also host Hopewell on AWS Elastic Beanstalk for auto-scaling and managed infrastructure.
+
+### Method A: AWS Management Console (Zip Upload)
+1. **Compress project files**:
+   On Windows PowerShell inside the project directory:
+   ```powershell
+   Compress-Archive -Path .\* -DestinationPath ..\hopewell-deploy.zip
+   ```
+   *(Ensure `index.html` is at the root of the `.zip` archive).*
+2. In the **AWS Elastic Beanstalk Console**, click **Create application**.
+3. **Application Name**: `hopewell-charity`.
+4. **Platform**: Choose **PHP** or **Node.js** (Both provide pre-configured Apache/Nginx web servers).
+5. **Application code**: Select **Upload your code** and choose `hopewell-deploy.zip`.
+6. Select **Single instance (free tier eligible)** and click **Submit**.
+7. Once environment status turns **OK (Green)**, open the generated environment URL.
+
+### Method B: AWS EB CLI
+```bash
+# Install EB CLI
+pip install awsebcli
+
+# Initialize
+eb init -p php hopewell --region us-east-1
+
+# Create environment and deploy
+eb create hopewell-env --single
+
+# Open website
+eb open
 ```
 
 ---
 
-### Option 2: Deploy on AWS Elastic Beanstalk (PaaS Deployment)
+## Troubleshooting & FAQ
 
-AWS Elastic Beanstalk manages server provisioning, load balancing, and scaling automatically.
+### Q: Why did `pm2 start index.js` fail with "Script not found"?
+**Answer**: `index.js` is used for Node.js backends (like Express or NestJS). Hopewell is a static frontend website with `index.html`. We use `serve -s . -l 80` with PM2 so that it acts as the HTTP web server.
 
-#### Method A: Using AWS Console (Web UI)
-
-1. **Prepare the Project Archive**:
-   Compress your project files into a `.zip` archive.
-   > **Note**: Zip the contents directly (so `index.html` is at the root of the zip), not the parent folder.
-   
-   On Windows PowerShell:
-   ```powershell
-   Compress-Archive -Path .\* -DestinationPath ..\hopewell-deploy.zip
-   ```
-
-2. **Create Elastic Beanstalk Application**:
-   - Go to the **AWS Elastic Beanstalk Console** > **Create application**.
-   - **Application name**: `hopewell-charity`.
-   - **Platform**: Select **PHP** or **Node.js** (Both provide a preconfigured web server like Apache/Nginx out-of-the-box that serves static `index.html` files).
-   - **Application code**: Choose **Upload your code** and upload `hopewell-deploy.zip`.
-   - **Preset**: Select **Single instance (free tier eligible)**.
-   - Click **Next** through the setup wizard (use default service roles).
-   - Review and click **Submit**.
-
-3. **View Live Application**:
-   - Elastic Beanstalk will provision the environment in 2–5 minutes.
-   - Once the health status shows **OK (Green)**, click the provided **Environment URL** (e.g., `http://hopewell-charity.eba-xxxxxx.region.elasticbeanstalk.com`).
-
-#### Method B: Using EB CLI (Command Line)
-
-1. **Install EB CLI**:
-   ```bash
-   pip install awsebcli
-   ```
-
-2. **Initialize Elastic Beanstalk**:
-   ```bash
-   eb init -p php hopewell --region us-east-1
-   ```
-
-3. **Create Environment and Deploy**:
-   ```bash
-   eb create hopewell-env --single
-   ```
-
-4. **Open in Browser**:
-   ```bash
-   eb open
-   ```
-
-5. **Deploy Updates**:
-   ```bash
-   eb deploy
-   ```
+### Q: Why Port 80?
+**Answer**: Port 80 is the default port for HTTP web traffic. Using port 80 allows users to visit `http://3.111.38.182` without needing to append port numbers like `:3000` or `:8080`.
 
 ---
 
