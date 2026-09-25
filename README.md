@@ -26,24 +26,6 @@ Because it is a static frontend website (without a Node.js backend like Express)
 
 ---
 
-## Quick Presentation & Demo Guide
-
-If you are explaining or demoing this deployment to clients, team members, or stakeholders, follow this flow:
-
-### 1. The 30-Second Elevator Pitch
-> *"This is **Hopewell**, an open-source NGO and charity website template. We deployed it on a cloud **AWS EC2 Linux instance** configured with a production static web server managed by **PM2** on Port 80, delivering fast, zero-downtime hosting."*
-
-### 2. Live Demo Checklist
-1. **Show the Live Site**: Open `http://3.111.38.182` in your browser. Highlight the responsiveness and clean UI.
-2. **Show the Background Process**: In the EC2 terminal, run:
-   ```bash
-   pm2 status
-   ```
-   Show that the `hopewell` process is `online`, showing active memory usage and uptime.
-3. **Show How Updates Work**: Explain that pushing changes to GitHub and running `git pull` instantly refreshes production.
-
----
-
 ## Step-by-Step EC2 Deployment Guide (Amazon Linux / PM2)
 
 This is the exact setup running on the live EC2 instance (`3.111.38.182`).
